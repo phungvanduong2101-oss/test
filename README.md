@@ -655,4 +655,338 @@ hệ thống có thể phục vụ.
 
 Thực nghiệm chỉ đánh giá endpoint GET /exams.
 Chưa đo mức sử dụng CPU/RAM và chưa benchmark
-các chức năng khác.
+các chức năng khác. 
+
+## 14. Kết quả thực nghiệm
+
+### 14.1. Kết quả kiểm thử chức năng
+
+Các trường hợp kiểm thử thủ công tại mục 12 đạt kết quả
+mong đợi trong phạm vi đã thử:
+
+- Các thao tác xác thực, phân quyền và quản lý nội dung
+  hoạt động theo kịch bản.
+- Bài làm giữ nguyên snapshot sau khi câu hỏi gốc thay đổi.
+- Gửi lại yêu cầu nộp không ghi đè kết quả đã lưu.
+- Hai tab cùng tài khoản nhận thông báo và đồng bộ
+  trạng thái đã đọc.
+- Người dùng truy cập lại có thể xem thông báo đã lưu.
+
+Kết quả nộp lặp không được sử dụng để thay thế cho
+kết quả kiểm thử nhiều yêu cầu nộp đồng thời.
+
+### 14.2. Kết quả kiểm thử tải
+
+Kết quả đo GET /exams theo thiết lập tại mục 13:
+
+| VUs | Tổng request | Trung bình (ms) | p50 (ms) | p95 (ms) | Request/giây | Lỗi HTTP |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 | 580 | 41.50 | 37.04 | 49.20 | 9.56 | 0% |
+| 50 | 1706 | 783.55 | 770.90 | 886.00 | 27.63 | 0% |
+| 100 | 1739 | 2560 | 2580 | 3060 | 27.16 | 0% |
+
+Hai kiểm tra mã HTTP 200 và nội dung HTML đều đạt 100%
+trong các lần chạy.
+
+Log kết quả:
+
+- [10 VUs](tests/load/result-10.txt)
+- [50 VUs](tests/load/result-50.txt)
+- [100 VUs](tests/load/result-100.txt)
+
+### 14.3. So sánh giữa các mức tải
+
+- Từ 10 lên 50 VUs, thông lượng tăng từ 9.56 lên
+  27.63 request/giây; p95 tăng từ 49.20 lên 886 ms.
+- Từ 50 lên 100 VUs, thông lượng gần như không tăng,
+  trong khi p95 tăng từ 886 lên 3060 ms.
+- Không ghi nhận lỗi HTTP trong các lần chạy đã báo cáo.
+
+Đây là so sánh giữa các mức tải của cùng một hệ thống.
+Dự án chưa thực hiện benchmark đối chứng giữa baseline
+và giải pháp đề xuất. 
+
+## 15. Thảo luận
+
+### 15.1. Mức độ đáp ứng mục tiêu
+
+Trong các trường hợp kiểm thử thủ công đã thực hiện,
+hệ thống đáp ứng các chức năng được liệt kê tại mục 12.
+Snapshot giữ nội dung bài làm khi câu hỏi gốc thay đổi;
+yêu cầu nộp lặp không ghi đè kết quả đã lưu.
+
+Kiểm thử tải GET /exams không ghi nhận lỗi HTTP
+tại các mức 10, 50 và 100 VUs. Tuy nhiên, kết quả này
+chỉ phản ánh endpoint và môi trường đã thử nghiệm.
+
+### 15.2. Ảnh hưởng khi tăng tải
+
+Ở 10 VUs, thời gian phản hồi p95 là 49.20 ms.
+Khi tăng lên 50 VUs, thông lượng tăng lên
+27.63 request/giây, đồng thời p95 tăng lên 886 ms.
+
+Khi tăng từ 50 lên 100 VUs, thông lượng gần như
+không tăng nhưng p95 tăng lên 3060 ms.
+Kết quả cho thấy dấu hiệu bão hòa trong môi trường đo:
+thêm người dùng ảo làm tăng thời gian chờ,
+không giúp tăng số yêu cầu xử lý mỗi giây.
+
+Thông lượng còn chịu ảnh hưởng bởi mô hình tải:
+mỗi VU chờ phản hồi rồi nghỉ 1 giây trước yêu cầu tiếp theo.
+Vì vậy, không xem số request/giây này là giới hạn
+công suất tuyệt đối của hệ thống.
+
+### 15.3. Nút thắt và giới hạn phân tích
+
+Một yêu cầu GET /exams bao gồm xử lý tại Express,
+truy vấn MongoDB và render HTML bằng Pug.
+
+Thực nghiệm chưa đo riêng thời gian từng bước,
+mức sử dụng CPU/RAM hoặc độ trễ truy vấn.
+Do đó, chưa đủ bằng chứng để xác định thành phần
+gây nghẽn chính.
+
+Server, MongoDB và k6 chạy cùng máy nên có thể
+cạnh tranh tài nguyên. Kết quả không đại diện trực tiếp
+cho triển khai trên nhiều máy hoặc qua Internet.
+
+### 15.4. Ưu điểm và đánh đổi
+
+- Snapshot giúp bảo toàn nội dung lịch sử nhưng tăng
+  dung lượng lưu trữ do sao chép dữ liệu câu hỏi.
+- Cập nhật có điều kiện trạng thái bảo vệ kết quả
+  đã nộp; cần kiểm thử đồng thời riêng để kiểm chứng
+  hành vi khi nhiều yêu cầu đến cùng lúc.
+- Thông báo được lưu trước khi phát realtime,
+  hỗ trợ xem lại khi người dùng truy cập sau.
+  Hai bước lưu và phát không phải một thao tác nguyên tử.
+
+### 15.5. Giới hạn thực nghiệm
+
+- Chỉ đo tải endpoint GET /exams.
+- Dữ liệu thử nghiệm còn nhỏ: 60 câu hỏi và 10 đề thi.
+- Mỗi mức tải chỉ chạy một lần, chưa đánh giá
+  mức biến động giữa nhiều lần đo.
+- Chưa đo CPU/RAM, tải kéo dài hoặc các thao tác
+  ghi dữ liệu đồng thời.
+- Kiểm thử chức năng được thực hiện thủ công,
+  chưa có bộ kiểm thử tự động. 
+
+  ## 16. Hạn chế
+
+1. **Soạn đề còn thủ công:** chưa hỗ trợ nhập hàng loạt
+   câu hỏi từ Word/Excel hoặc tự động tạo đề theo
+   ma trận kiến thức và mức độ khó.
+
+2. **Chống gian lận còn hạn chế:** chưa kiểm soát việc
+   người dùng tra cứu tài liệu hoặc sử dụng công cụ
+   bên ngoài trong quá trình làm bài; chưa phù hợp
+   để thay thế hệ thống thi chính thức có giám sát.
+
+3. **Soạn hình minh họa còn bất tiện:** trình soạn thảo
+   hỗ trợ công thức toán và chèn ảnh nhưng chưa có
+   công cụ vẽ trực tiếp đồ thị hoặc hình học.
+
+4. **Snapshot làm tăng dung lượng lưu trữ:** nội dung
+   câu hỏi được sao chép vào từng lượt làm để bảo toàn
+   lịch sử, dẫn đến dữ liệu trùng lặp.
+
+5. **Lưu và phát thông báo chưa nguyên tử:** thông báo
+   được lưu vào MongoDB trước khi phát qua Socket.IO.
+   Nếu bước phát thất bại, người dùng có thể chưa nhận
+   được thông báo ngay dù dữ liệu đã được lưu. 
+
+## 17. Hướng phát triển
+
+1. **Nhập câu hỏi hàng loạt:** hỗ trợ nhập từ Word/Excel,
+   kiểm tra dữ liệu và xem trước trước khi lưu.
+
+2. **Tạo đề theo ma trận:** chọn câu hỏi theo môn,
+   chuyên đề, loại câu hỏi và mức độ nhận thức.
+
+3. **Cải thiện công cụ soạn thảo:** bổ sung công cụ
+   vẽ đồ thị và hình học để tạo nội dung minh họa.
+
+4. **Tăng độ tin cậy của thông báo:** bổ sung cơ chế
+   ghi nhận và thử lại khi phát thông báo thất bại,
+   đồng thời tránh hiển thị trùng khi gửi lại.
+
+## 18. Báo cáo
+
+Báo cáo đầy đủ trình bày bài toán, cơ sở lý thuyết,
+thiết kế, triển khai và kết quả thực nghiệm của dự án.
+
+[Báo cáo đầy đủ](report/report.pdf)
+ 
+## 19. Tài liệu tham khảo
+
+1. [Node.js Documentation](https://nodejs.org/en/docs)
+   — Môi trường thực thi JavaScript phía server.
+
+2. [Express Documentation](https://expressjs.com/)
+   — Định tuyến HTTP, middleware và xử lý yêu cầu.
+
+3. [Pug Documentation](https://pugjs.org/)
+   — Template và render giao diện HTML.
+
+4. [MongoDB Documentation](https://www.mongodb.com/docs/)
+   — Lưu trữ, truy vấn và cập nhật dữ liệu.
+
+5. [Mongoose Documentation](https://mongoosejs.com/docs/)
+   — Schema, model và thao tác với MongoDB.
+
+6. [Socket.IO Documentation](https://socket.io/docs/v4/)
+   — Kết nối realtime, sự kiện và room.
+
+7. [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
+   — Tạo và xác minh JWT.
+
+8. [bcrypt.js](https://github.com/dcodeIO/bcrypt.js)
+   — Hash và kiểm tra mật khẩu.
+
+9. [Quill Documentation](https://quilljs.com/docs/quickstart)
+   — Trình soạn thảo nội dung.
+
+10. [KaTeX Documentation](https://katex.org/docs/api)
+    — Hiển thị công thức toán.
+
+11. [Cloudinary Node.js Documentation](https://cloudinary.com/documentation/node_integration)
+    — Tải lên và quản lý hình ảnh.
+
+12. [Grafana k6 Documentation](https://grafana.com/docs/k6/latest/)
+    — Xây dựng kịch bản và đọc kết quả kiểm thử tải. 
+ 
+## 20. Phân công và đóng góp
+
+| Thành viên | Công việc thực hiện | Tỷ lệ đóng góp |
+| --- | --- | ---: |
+| Phùng Văn Dương | [Liệt kê công việc thực tế] | [...]% |
+| [Thành viên 2] | [Liệt kê công việc thực tế] | [...]% |
+| [Thành viên 3] | [Liệt kê công việc thực tế] | [...]% |
+| **Tổng** | | **100%** |
+
+## 21. Demo
+
+### 21.1. Môi trường demo
+
+- Server và MongoDB chạy trên máy demo.
+- Truy cập tại `http://localhost:3000`.
+- Sử dụng hai trình duyệt hoặc hai hồ sơ trình duyệt
+  để đăng nhập các tài khoản khác nhau.
+- Chuẩn bị tài khoản admin và hai tài khoản user.
+- Chuẩn bị môn học, chuyên đề, câu hỏi và đề đã xuất bản.
+- Cấu hình Cloudinary và kết nối Internet nếu demo tải ảnh.
+
+Script seed tạo một admin và một user.
+Tài khoản user thứ hai có thể tạo qua chức năng đăng ký.
+
+### 21.2. Các bước demo
+
+#### Bước 1: Khởi động và đăng nhập
+
+1. Khởi động MongoDB và server theo mục 10–11.
+2. Đăng nhập tài khoản admin.
+3. Giới thiệu các trang quản trị và dữ liệu đã chuẩn bị.
+
+#### Bước 2: Soạn câu hỏi và tạo đề
+
+1. Tạo câu hỏi thuộc môn học và chuyên đề.
+2. Minh họa nhập công thức toán.
+3. Chèn ảnh nếu đã cấu hình Cloudinary.
+4. Tạo đề, chọn câu hỏi và xuất bản.
+
+#### Bước 3: Làm bài và xem kết quả
+
+1. Đăng nhập tài khoản user trên trình duyệt khác.
+2. Chọn đề và bắt đầu làm bài.
+3. Trả lời câu hỏi rồi nộp bài.
+4. Xem điểm, đáp án, lời giải và lịch sử bài làm.
+
+#### Bước 4: Minh họa snapshot
+
+1. User bắt đầu một lượt làm bài mới.
+2. Admin sửa nội dung một câu hỏi thuộc đề đó.
+3. User hoàn tất và nộp bài.
+4. Đối chiếu nội dung trong kết quả với câu hỏi đã sửa,
+   minh họa lượt làm vẫn sử dụng snapshot ban đầu.
+
+#### Bước 5: Nhóm học tập và thông báo
+
+1. User thứ nhất tạo nhóm.
+2. User thứ hai xin tham gia.
+3. Chủ nhóm nhận thông báo và duyệt yêu cầu.
+4. Chia sẻ đề vào nhóm để thành viên truy cập.
+
+#### Bước 6: Minh họa nhiều client
+
+1. Mở hai tab cùng tài khoản nhận thông báo.
+2. Dùng tài khoản khác thực hiện thao tác phát sinh thông báo.
+3. Quan sát thông báo xuất hiện trên hai tab.
+4. Đánh dấu đã đọc ở một tab và kiểm tra tab còn lại.
+
+## 22. Nộp bài
+
+### 22.1. Mã nguồn
+
+Mã nguồn được nộp qua Google Drive theo đường dẫn
+và thời hạn do giảng viên thông báo.
+
+Gói mã nguồn gồm:
+
+- Mã nguồn ứng dụng.
+- `package.json` và `yarn.lock`.
+- `README.md` hướng dẫn cài đặt, chạy và kiểm thử.
+- File `.env.example` chứa cấu hình mẫu.
+- Script seed tài khoản demo.
+- Script kiểm thử tải và log kết quả.
+- Sơ đồ kiến trúc và tài liệu liên quan.
+
+Không đưa thư mục `node_modules` hoặc file `.env`
+chứa thông tin bí mật thực tế vào gói nộp.
+Người chạy cài thư viện theo hướng dẫn tại mục 10.
+
+### 22.2. Báo cáo
+
+Báo cáo đầy đủ: [report/report.pdf](report/report.pdf).
+
+Báo cáo được kiểm tra bằng Compilatio theo yêu cầu
+của học phần.
+
+### 22.3. Kiểm tra gói nộp
+
+- Có đủ mã nguồn và các file cấu hình mẫu.
+- Các đường dẫn tài liệu trong README hoạt động.
+- Có hướng dẫn chuẩn bị dữ liệu và tài khoản demo.
+- Có script kiểm thử và kết quả thực nghiệm đã báo cáo.
+- Link Google Drive cho phép giảng viên truy cập.
+ 
+## 23. Kiểm tra trước khi nộp
+
+- [ ] Cài đặt thư viện thành công từ mã nguồn nộp.
+- [ ] Server khởi động và kết nối được MongoDB.
+- [ ] Trình duyệt truy cập được giao diện.
+- [ ] Script seed tạo được tài khoản demo.
+- [ ] Các chức năng chính hoạt động.
+- [ ] Giao tiếp HTTP và Socket.IO được mô tả.
+- [ ] Đã kiểm thử nhiều client.
+- [ ] Đã kiểm thử phân quyền và xử lý lỗi.
+- [ ] Script kiểm thử tải chạy được.
+- [ ] Số liệu thực nghiệm khớp với log kết quả.
+- [ ] Môi trường, dữ liệu và lệnh kiểm thử được ghi rõ.
+- [ ] Đóng góp kỹ thuật được trình bày rõ.
+- [ ] README có đủ hướng dẫn cài đặt và chạy.
+- [ ] Báo cáo đầy đủ và liên kết mở được.
+- [ ] Có tài liệu tham khảo và trích dẫn trong báo cáo.
+- [ ] Kết quả Compilatio không vượt quá 20%.
+- [ ] Thông tin thành viên và tỷ lệ đóng góp đã thống nhất.
+- [ ] Gói nộp không chứa thông tin bí mật thực tế.
+- [ ] Link Google Drive cho phép giảng viên truy cập.
+- [ ] Tất cả thành viên hiểu phần việc và luồng chính của hệ thống. 
+
+## 24. Liên hệ
+
+- Đại diện nhóm: [Họ và tên].
+- Email: [Email liên hệ].
+- Nhóm bài tập: [Số nhóm].
+- Lớp học phần: [Mã lớp học phần].
+
