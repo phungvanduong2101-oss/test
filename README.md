@@ -210,34 +210,153 @@ và điều kiện kết nối; không phải giao thức WebSocket thuần.
 
 ### 5.3. Định dạng thông điệp
 
-#### HTTP
+#### HTTP: Nộp bài
 
-- Các trang giao diện được trả về dưới dạng `text/html`.
-- Các thao tác dùng JavaScript có thể trao đổi dữ liệu JSON.
-- Biểu mẫu được gửi theo định dạng do từng form quy định.
-- Ảnh được tải lên bằng `multipart/form-data`.
-- JWT được trình duyệt gửi kèm trong cookie; server xác minh
-  trước khi cho phép truy cập chức năng được bảo vệ.
+Client gửi yêu cầu `POST /exams/submit` với các header:
 
-Một số yêu cầu trong luồng làm bài:
+```http
+Content-Type: application/json
+Accept: application/json
+```
 
-| Phương thức | Đường dẫn | Mục đích |
-| --- | --- | --- |
-| GET | `/exams` | Xem danh sách đề |
-| GET | `/exams/:id` | Xem thông tin đề |
-| POST | `/exams/:examId/start` | Bắt đầu lượt làm |
-| POST | `/exams/submit` | Nộp bài |
-| GET | `/exams/:attemptId/result` | Xem kết quả |
+Trình duyệt gửi kèm cookie `token` của phiên đăng nhập.
+Server xác định người nộp từ JWT, không nhận `accountId`
+do client cung cấp.
 
-#### Socket.IO
+Ví dụ request body gồm ba loại câu hỏi:
 
-Thông báo được trao đổi dưới dạng sự kiện kèm dữ liệu.
-Server xác thực kết nối bằng JWT cookie và đưa socket
-vào room `account:<accountId>` để gửi thông báo đến
-đúng tài khoản.
+```json
+{
+  "attemptId": "690600000000000000000001",
+  "answers": [
+    {
+      "questionId": "690600000000000000000002",
+      "answer": "A"
+    },
+    {
+      "questionId": "690600000000000000000003",
+      "answer": {
+        "A": true,
+        "B": false,
+        "C": true,
+        "D": false
+      }
+    },
+    {
+      "questionId": "690600000000000000000004",
+      "answer": "42"
+    }
+  ]
+}
+```
 
-Tên sự kiện và các trường dữ liệu phải thống nhất giữa
-phần phát sự kiện trên server và phần lắng nghe trên client.
+| Trường | Ý nghĩa |
+| --- | --- |
+| `attemptId` | ID lượt làm đã tạo khi bắt đầu bài |
+| `answers` | Mảng câu trả lời |
+| `answers[].questionId` | ID câu hỏi tương ứng trong snapshot |
+| `answers[].answer` | Đáp án người dùng gửi: chuỗi khóa lựa chọn với trắc nghiệm; object chứa boolean với đúng/sai; chuỗi với điền đáp án |
+
+Client không gửi đáp án đúng hoặc điểm.
+Server chấm dựa trên snapshot đã lưu.
+
+Ví dụ phản hồi thành công, HTTP `200`:
+
+```json
+{
+  "code": "success",
+  "message": "Nộp bài thành công.",
+  "attemptId": "690600000000000000000001",
+  "score": 7.5,
+  "maxScore": 10
+}
+```
+
+| Trường | Ý nghĩa |
+| --- | --- |
+| `code` | Trạng thái xử lý của ứng dụng |
+| `message` | Thông báo kết quả |
+| `attemptId` | ID lượt làm đã nộp |
+| `score` | Điểm do server tính |
+| `maxScore` | Điểm tối đa của lượt làm |
+
+Nếu lượt làm đã được nộp hoặc yêu cầu khác đã cập nhật
+thành công trước đó, server trả HTTP `409`:
+
+```json
+{
+  "code": "error",
+  "message": "Bài làm đã được nộp."
+}
+```
+
+Nếu thiếu `attemptId` hoặc `answers` không phải mảng,
+server trả HTTP `400`:
+
+```json
+{
+  "code": "error",
+  "message": "Dữ liệu bài làm không hợp lệ."
+}
+```
+
+#### Socket.IO: Thông báo realtime
+
+Server đọc JWT từ cookie `token`, xác thực kết nối
+và đưa socket vào room `account:<accountId>`.
+Các tab cùng tài khoản có thể cùng tham gia room này.
+
+**Sự kiện `notification:new`**
+
+Sau khi lưu thông báo vào MongoDB, server phát sự kiện
+`notification:new` đến room của người nhận.
+
+Ví dụ payload:
+
+```json
+{
+  "_id": "690600000000000000000005",
+  "type": "group_join_request",
+  "content": "Nguyễn Văn A muốn tham gia nhóm \"Ôn thi Toán\".",
+  "link": "/groups/690600000000000000000006",
+  "isRead": false,
+  "createdAt": "2026-11-01T12:00:00.000Z"
+}
+```
+
+| Trường | Ý nghĩa |
+| --- | --- |
+| `_id` | ID thông báo |
+| `type` | Loại thông báo |
+| `content` | Nội dung hiển thị |
+| `link` | Đường dẫn mở khi người dùng chọn thông báo |
+| `isRead` | Trạng thái đã đọc |
+| `createdAt` | Thời điểm tạo thông báo |
+
+Các giá trị `type` được định nghĩa trong model:
+
+- `group_join_request`
+- `group_join_approved`
+- `group_join_rejected`
+- `group_exam_published`
+
+**Sự kiện `notification:read`**
+
+Sau khi cập nhật thông báo thành đã đọc, server phát
+`notification:read` đến room của cùng tài khoản:
+
+```json
+{
+  "notificationId": "690600000000000000000005"
+}
+```
+
+`notificationId` là ID thông báo vừa được đánh dấu đã đọc.
+
+Trong implementation hiện tại, client lắng nghe cả
+`notification:new` và `notification:read`, sau đó gọi lại
+`GET /notifications` để lấy danh sách mới nhất và số chưa đọc.
+Client không cập nhật giao diện trực tiếp chỉ từ payload event.
 
 ### 5.4. Trình tự giao tiếp
 
