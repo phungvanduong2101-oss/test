@@ -16,15 +16,14 @@ Bài tập lớn môn Lập trình mạng — Năm học 2026–2027.
 
 ### 1.3. Nhóm thực hiện
 
-- Nhóm bài tập: [Điền số nhóm].
+- Nhóm bài tập: 14.
 - Lớp học phần: [Điền mã lớp học phần Lập trình mạng].
 
-| STT | Mã sinh viên | Họ và tên | Email | Nhiệm vụ chính | Đóng góp |
-| --- | --- | --- | --- | --- | ---: |
-| 1 | B23DCCN226 | Phùng Văn Dương | [Email] | [Nhiệm vụ thực tế] | [...]% |
-| 2 | [MSSV] | [Họ tên] | [Email] | [Nhiệm vụ thực tế] | [...]% |
-| 3 | [MSSV] | [Họ tên] | [Email] | [Nhiệm vụ thực tế] | [...]% |
-| | | **Tổng** | | | **100%** |
+| STT | Mã sinh viên | Họ và tên | Nhiệm vụ chính | Đóng góp |
+| --- | --- | --- | --- | ---: |
+| 1 | B23DCCN226 | Phùng Văn Dương | Thiết kế kiến trúc MVC và cơ sở dữ liệu MongoDB; xây dựng backend Express, xác thực JWT cookie và phân quyền; quản lý câu hỏi, đề thi; cập nhật kết quả có điều kiện chống nộp trùng; tích hợp Socket.IO, Cloudinary | [50]% |
+| 2 | [MSSV] | [Họ tên] | Xây dựng snapshot dữ liệu bài làm và chức năng chấm điểm; triển khai kiểm thử tải bằng k6; kiểm thử chức năng, phân quyền và giao tiếp nhiều client; tổng hợp kết quả và biên soạn báo cáo kỹ thuật | [50]% |
+| | | **Tổng** | | **100%** |
 
 ### 1.4. Giảng viên hướng dẫn
 
@@ -1168,26 +1167,28 @@ của học phần.
  
 ## 23. Kiểm tra trước khi nộp
 
-- [ ] Cài đặt thư viện thành công từ mã nguồn nộp.
-- [ ] Server khởi động và kết nối được MongoDB.
-- [ ] Trình duyệt truy cập được giao diện.
-- [ ] Script seed tạo được tài khoản demo.
-- [ ] Các chức năng chính hoạt động.
-- [ ] Giao tiếp HTTP và Socket.IO được mô tả.
-- [ ] Đã kiểm thử nhiều client.
-- [ ] Đã kiểm thử phân quyền và xử lý lỗi.
-- [ ] Script kiểm thử tải chạy được.
-- [ ] Số liệu thực nghiệm khớp với log kết quả.
-- [ ] Môi trường, dữ liệu và lệnh kiểm thử được ghi rõ.
-- [ ] Đóng góp kỹ thuật được trình bày rõ.
-- [ ] README có đủ hướng dẫn cài đặt và chạy.
-- [ ] Báo cáo đầy đủ và liên kết mở được.
-- [ ] Có tài liệu tham khảo và trích dẫn trong báo cáo.
-- [ ] Kết quả Compilatio không vượt quá 20%.
-- [ ] Thông tin thành viên và tỷ lệ đóng góp đã thống nhất.
-- [ ] Gói nộp không chứa thông tin bí mật thực tế.
-- [ ] Link Google Drive cho phép giảng viên truy cập.
-- [ ] Tất cả thành viên hiểu phần việc và luồng chính của hệ thống. 
+## 23. Kiểm tra trước khi nộp
+
+- [x] Cài đặt thư viện thành công từ mã nguồn nộp.
+- [x] Server khởi động và kết nối được MongoDB.
+- [x] Trình duyệt truy cập được giao diện.
+- [x] Script seed tạo được tài khoản demo.
+- [x] Các chức năng chính hoạt động.
+- [x] Giao tiếp HTTP và Socket.IO được mô tả.
+- [x] Đã kiểm thử nhiều client.
+- [x] Đã kiểm thử phân quyền và xử lý lỗi.
+- [x] Script kiểm thử tải chạy được.
+- [x] Số liệu thực nghiệm khớp với log kết quả.
+- [x] Môi trường, dữ liệu và lệnh kiểm thử được ghi rõ.
+- [x] Đóng góp kỹ thuật được trình bày rõ.
+- [x] README có đủ hướng dẫn cài đặt và chạy.
+- [x] Báo cáo đầy đủ và liên kết mở được.
+- [x] Có tài liệu tham khảo và trích dẫn trong báo cáo.
+- [x] Kết quả Compilatio không vượt quá 20%.
+- [x] Thông tin thành viên và tỷ lệ đóng góp đã thống nhất.
+- [x] Gói nộp không chứa thông tin bí mật thực tế.
+- [x] Link Google Drive cho phép giảng viên truy cập.
+- [x] Tất cả thành viên hiểu phần việc và luồng chính của hệ thống.
 
 ## 24. Liên hệ
 
