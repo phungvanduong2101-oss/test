@@ -407,4 +407,252 @@ Cloudinary. Nếu sử dụng MongoDB Atlas, server cũng cần
 kết nối đến dịch vụ Atlas.
 
 Frontend được phục vụ cùng server, không cần cài đặt
-hoặc khởi chạy một ứng dụng client riêng.
+hoặc khởi chạy một ứng dụng client riêng. 
+
+## 10. Cài đặt và cấu hình
+
+### 10.1. Lấy mã nguồn
+
+```bash
+git clone https://github.com/phungvanduong2101-oss/thpt-practice.git
+cd thpt-practice
+```
+
+Hoặc tải và giải nén mã nguồn, sau đó mở terminal tại thư mục
+chứa `package.json`.
+
+### 10.2. Cài đặt thư viện
+
+Sử dụng npm:
+
+```bash
+npm install
+```
+
+Hoặc Yarn:
+
+```bash
+yarn install
+```
+
+Chọn một trình quản lý gói để sử dụng trong các bước tiếp theo.
+
+### 10.3. Cấu hình môi trường
+
+Tạo file `.env` tại thư mục gốc:
+
+```dotenv
+MONGO_URI=mongodb://127.0.0.1:27017/THPT
+JWT_SECRET=replace_with_a_long_random_secret
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+```
+
+- `MONGO_URI`: địa chỉ kết nối MongoDB. Thay bằng chuỗi kết nối
+  Atlas nếu không sử dụng MongoDB local.
+- `JWT_SECRET`: thay giá trị mẫu bằng chuỗi bí mật ngẫu nhiên,
+  đủ dài, dùng để ký và xác minh JWT.
+- `CLOUDINARY_*`: điền thông tin từ tài khoản Cloudinary khi
+  sử dụng chức năng tải ảnh.
+
+Không công khai file `.env` chứa thông tin bí mật thực tế.
+
+### 10.4. Cơ sở dữ liệu và tài khoản demo
+
+Khởi động MongoDB local hoặc bảo đảm kết nối Atlas đã được
+cấu hình đúng trước khi chạy seed.
+
+Không cần tạo database và collection thủ công; MongoDB tạo
+khi ứng dụng tạo collection hoặc ghi dữ liệu.
+
+Chạy lệnh tạo tài khoản demo:
+
+```bash
+npm run seed
+```
+
+Nếu dùng Yarn:
+
+```bash
+yarn seed
+```
+
+| Vai trò | Email | Mật khẩu demo |
+| --- | --- | --- |
+| Admin | `admin@example.com` | `Admin@123456` |
+| User | `user@example.com` | `User@123456` |
+
+Mật khẩu được hash bằng bcrypt. Nếu email đã tồn tại,
+script bỏ qua tài khoản đó, không thay đổi mật khẩu hoặc quyền.
+
+Sau khi chạy seed, có thể đăng nhập bằng các tài khoản trên.
+Các bước tạo nội dung và chạy thử được trình bày ở mục tiếp theo. 
+ 
+## 11. Chạy ứng dụng
+
+### 11.1. Khởi động server
+
+Chạy tại thư mục gốc của dự án.
+
+Chế độ phát triển, tự khởi động lại khi mã nguồn thay đổi:
+
+```bash
+npm run dev
+```
+
+Hoặc:
+
+```bash
+yarn dev
+```
+
+Chạy thông thường:
+
+```bash
+npm start
+```
+
+Hoặc:
+
+```bash
+yarn start
+```
+
+Chỉ chọn một lệnh phù hợp. Giữ terminal đang chạy trong
+quá trình sử dụng; nhấn `Ctrl+C` để dừng server.
+
+### 11.2. Truy cập client
+
+Mở trình duyệt tại:
+
+http://localhost:3000
+
+Ứng dụng hiện sử dụng cổng cố định `3000`.
+Express phục vụ giao diện Pug cùng server,
+không cần chạy frontend riêng.
+
+Sau khi seed tài khoản:
+
+1. Đăng nhập tại `/auth/login` bằng tài khoản admin.
+2. Truy cập `/admin/dashboard`.
+3. Tạo môn học → chuyên đề → câu hỏi → đề thi.
+4. Xuất bản câu hỏi và đề thi cần sử dụng.
+5. Đăng nhập bằng tài khoản user để chọn đề và làm bài.
+
+### 11.3. Chạy nhiều client
+
+Không cần khởi động thêm server.
+
+- Mở nhiều tab với cùng tài khoản để kiểm tra thông báo
+  và đồng bộ trạng thái đã đọc.
+- Để sử dụng các tài khoản khác nhau đồng thời, mở các
+  trình duyệt hoặc hồ sơ trình duyệt khác nhau.
+  Các tab thông thường trong cùng hồ sơ dùng chung cookie
+  đăng nhập.
+
+### 11.4. Chạy kiểm thử tải
+
+Cài k6 riêng và giữ server đang chạy.
+Mở terminal khác tại thư mục gốc, chạy lần lượt:
+
+```bash
+k6 run --vus 10 --duration 1m tests/load/exams.js
+k6 run --vus 50 --duration 1m tests/load/exams.js
+k6 run --vus 100 --duration 1m tests/load/exams.js
+```
+
+Script gửi yêu cầu `GET /exams`, kiểm tra HTTP 200 và
+nội dung HTML. Mỗi VU chờ phản hồi rồi nghỉ 1 giây.
+
+## 12. Các chức năng chính và kiểm thử
+
+Các trường hợp dưới đây được kiểm thử thủ công.
+“Đạt” phản ánh kết quả quan sát trong các trường hợp đã thử,
+không có nghĩa hệ thống không còn lỗi.
+
+| STT | Chức năng | Trường hợp kiểm thử | Kết quả |
+| --- | --- | --- | --- |
+| 1 | Xác thực | Đăng ký, đăng nhập, đăng xuất; truy cập chức năng bảo vệ sau khi đăng xuất | Đạt |
+| 2 | Phân quyền | Tài khoản user truy cập trang quản trị | Đạt |
+| 3 | Quản lý nội dung | Tạo môn học, chuyên đề, câu hỏi và đề thi; kiểm tra dữ liệu đã lưu | Đạt |
+| 4 | Chấm điểm | Làm bài có câu trắc nghiệm, đúng/sai và điền đáp án; đối chiếu điểm dự kiến | Đạt |
+| 5 | Snapshot | Sửa câu hỏi gốc sau khi bắt đầu; kiểm tra lượt làm giữ nội dung cũ | Đạt |
+| 6 | Nộp bài lặp | Gửi lại yêu cầu nộp cho lượt đã hoàn tất; kiểm tra kết quả không bị ghi đè | Đạt |
+| 7 | Quyền sở hữu bài làm | Truy cập hoặc nộp lượt làm của tài khoản khác | Đạt |
+| 8 | Nhóm học tập | Xin tham gia, duyệt thành viên và chia sẻ đề trong nhóm | Đạt |
+| 9 | Realtime nhiều client | Mở hai tab cùng tài khoản; kiểm tra nhận thông báo và đồng bộ trạng thái đã đọc | Đạt |
+| 10 | Thông báo đã lưu | Truy cập lại sau khi offline; kiểm tra xem được thông báo phát sinh | Đạt |
+| 11 | Kiểm tra ảnh tải lên | Tải ảnh sai định dạng hoặc vượt giới hạn dung lượng cấu hình | Đạt |
+| 12 | Lỗi dịch vụ | Kiểm tra phản hồi khi thao tác với MongoDB hoặc Cloudinary thất bại | Đạt | 
+## 13. Thiết lập thực nghiệm
+
+### 13.1. Môi trường
+
+| Thành phần | Cấu hình |
+| --- | --- |
+| Hệ điều hành | Windows 11 |
+| CPU | Intel Core i7-11800H |
+| RAM | 16 GB |
+| Node.js | v24.12.0 |
+| MongoDB | Chạy local |
+| Công cụ đo tải | k6 v2.3.0 |
+| Triển khai | Server, MongoDB và k6 chạy trên cùng một máy |
+| Địa chỉ truy cập | http://localhost:3000 |
+
+Các số liệu phản ánh môi trường thử nghiệm trên localhost,
+chưa bao gồm độ trễ mạng khi triển khai từ xa.
+
+### 13.2. Dữ liệu thử nghiệm
+
+Dữ liệu tại thời điểm đo gồm:
+
+- 4 môn học.
+- 60 câu hỏi.
+- 10 đề thi.
+
+Script seed tài khoản không thay thế cho việc chuẩn bị
+dữ liệu môn học, câu hỏi và đề thi.
+
+### 13.3. Kịch bản kiểm thử tải
+
+Mục đích: đánh giá thời gian phản hồi, thông lượng và
+tỷ lệ lỗi của chức năng xem danh sách đề khi tăng tải.
+
+| Kịch bản | Endpoint | Số VUs | Thời gian |
+| --- | --- | ---: | --- |
+| 1 | GET /exams | 10 | 60 giây |
+| 2 | GET /exams | 50 | 60 giây |
+| 3 | GET /exams | 100 | 60 giây |
+
+Trong mỗi kịch bản:
+
+- Mỗi VU gửi yêu cầu, chờ phản hồi rồi nghỉ 1 giây
+  trước khi gửi yêu cầu tiếp theo.
+- Kiểm tra mã HTTP 200 và nội dung HTML.
+- Mỗi mức tải chạy một lần.
+- Các mức tải được chạy lần lượt, không chạy đồng thời.
+
+Script: `tests/load/exams.js`.
+Lệnh chạy được trình bày tại mục 11.4.
+
+### 13.4. Chỉ số đánh giá
+
+| Chỉ số | Ý nghĩa |
+| --- | --- |
+| Thời gian phản hồi trung bình | Giá trị trung bình của `http_req_duration` |
+| p50 | 50% yêu cầu có thời gian phản hồi không vượt giá trị này |
+| p95 | 95% yêu cầu có thời gian phản hồi không vượt giá trị này |
+| Throughput | Số yêu cầu mỗi giây do k6 báo cáo |
+| Tổng request | Tổng số yêu cầu HTTP trong lần chạy |
+| Tỷ lệ lỗi HTTP | Giá trị `http_req_failed` do k6 ghi nhận |
+| Checks | Tỷ lệ đạt các kiểm tra HTTP 200 và nội dung HTML |
+
+Số VUs là mức tải người dùng ảo được cấu hình,
+không đồng nghĩa với số người dùng thực tế mà toàn bộ
+hệ thống có thể phục vụ.
+
+Thực nghiệm chỉ đánh giá endpoint GET /exams.
+Chưa đo mức sử dụng CPU/RAM và chưa benchmark
+các chức năng khác.
