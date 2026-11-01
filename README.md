@@ -1,33 +1,32 @@
 # Hệ thống ôn luyện thi tốt nghiệp THPT
 
-Bài tập lớn môn Lập trình mạng — Năm học 2026–2027.
+Bài tập lớn môn Lập trình mạng.
 
 ## 1. Thông tin dự án
 
 ### 1.1. Tên dự án
 
 - Tên tiếng Việt: Hệ thống ôn luyện thi tốt nghiệp THPT.
-- Tên mã nguồn: THPT Practice.
+- Tên tiếng Anh: THPT Practice. 
 
-### 1.2. Đề tài
 
-- Mã đề tài: [Điền mã đề tài đã đăng ký].
-- Tên đề tài: [Điền tên đề tài đã được giảng viên duyệt].
+### 1.2. Topic
+
+- Nhóm chủ đề : Chủ đề 3 – Ứng dụng mạng (Network Application)
 
 ### 1.3. Nhóm thực hiện
 
-- Nhóm bài tập: 14.
-- Lớp học phần: [Điền mã lớp học phần Lập trình mạng].
+- Nhóm bài tập: 14. 
 
 | STT | Mã sinh viên | Họ và tên | Nhiệm vụ chính | Đóng góp |
 | --- | --- | --- | --- | ---: |
 | 1 | B23DCCN226 | Phùng Văn Dương | Thiết kế kiến trúc MVC và cơ sở dữ liệu MongoDB; xây dựng backend Express, xác thực JWT cookie và phân quyền; quản lý câu hỏi, đề thi; cập nhật kết quả có điều kiện chống nộp trùng; tích hợp Socket.IO, Cloudinary | [50]% |
-| 2 | [MSSV] | [Họ tên] | Xây dựng snapshot dữ liệu bài làm và chức năng chấm điểm; triển khai kiểm thử tải bằng k6; kiểm thử chức năng, phân quyền và giao tiếp nhiều client; tổng hợp kết quả và biên soạn báo cáo kỹ thuật | [50]% |
+| 2 | [B23DCCN784] | [Trần Hoàng Thiên] | Xây dựng snapshot dữ liệu bài làm và chức năng chấm điểm; triển khai kiểm thử tải bằng k6; kiểm thử chức năng, phân quyền và giao tiếp nhiều client; tổng hợp kết quả và biên soạn báo cáo kỹ thuật | [50]% |
 | | | **Tổng** | | **100%** |
 
 ### 1.4. Giảng viên hướng dẫn
 
-[Điền họ tên giảng viên]. 
+MSc. Ngô Văn Quyền
 ## 2. Tóm tắt dự án
 
 ### 2.1. Bài toán
