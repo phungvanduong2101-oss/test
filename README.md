@@ -381,16 +381,103 @@ sequenceDiagram
 
 ### 5.5. Xử lý lỗi
 
-| Trường hợp | Cách xử lý |
+#### Xác thực và phân quyền
+
+Middleware phân biệt yêu cầu nhận JSON dựa trên header
+`Accept` có chứa `application/json`.
+
+| Trường hợp | Phản hồi thực tế |
 | --- | --- |
-| Chưa đăng nhập hoặc token không hợp lệ | Middleware chặn truy cập chức năng được bảo vệ |
-| Không đủ quyền | Từ chối thao tác quản trị hoặc truy cập tài nguyên không thuộc quyền người dùng |
-| Dữ liệu đầu vào không hợp lệ | Kiểm tra và từ chối yêu cầu, trả thông báo phù hợp |
-| Tài nguyên không tồn tại | Thông báo không tìm thấy |
-| Nộp lại lượt đã hoàn tất | Không cập nhật ghi đè kết quả đã lưu |
-| Ảnh sai định dạng hoặc vượt giới hạn | Từ chối tải lên |
-| Lỗi MongoDB hoặc Cloudinary | Xử lý lỗi và thông báo thao tác thất bại |
-| Mất kết nối realtime | Thông báo đã lưu vẫn có thể được truy xuất lại khi người dùng truy cập hệ thống | 
+| Chưa đăng nhập, yêu cầu JSON | HTTP 401, JSON với `code: "error"` và `message: "Vui lòng đăng nhập để tiếp tục."` |
+| Chưa đăng nhập, truy cập trang thông thường | HTTP 302, chuyển hướng đến `/auth/login` |
+| User truy cập chức năng admin, yêu cầu JSON | HTTP 403, JSON với thông báo `"Bạn không có quyền truy cập."` |
+| User truy cập trang admin thông thường | HTTP 403, nội dung `"Bạn không có quyền truy cập."` |
+
+JWT hết hạn hoặc không hợp lệ được middleware xóa khỏi
+cookie. Yêu cầu tiếp tục được xử lý như chưa đăng nhập.
+Tài khoản không tồn tại hoặc không hoạt động cũng không
+được công nhận là đã đăng nhập.
+
+#### Nộp bài và truy cập kết quả
+
+| Trường hợp | Mã HTTP | Thông báo |
+| --- | ---: | --- |
+| Thiếu `attemptId` hoặc `answers` không phải mảng | 400 | Dữ liệu bài làm không hợp lệ. |
+| ID lượt làm không hợp lệ, phát sinh CastError | 400 | ID bài làm không hợp lệ. |
+| Phần tử câu trả lời không hợp lệ hoặc `questionId` không phải chuỗi | 400 | Dữ liệu câu trả lời không hợp lệ. |
+| Lượt làm không có dữ liệu câu hỏi | 400 | Bài làm chưa có dữ liệu câu hỏi. |
+| Không tìm thấy lượt làm thuộc tài khoản đang đăng nhập | 404 | Không tìm thấy bài làm. |
+| Lượt làm đã nộp hoặc yêu cầu khác đã nộp thành công trước | 409 | Bài làm đã được nộp. |
+
+Các lỗi nộp bài trên trả JSON theo cấu trúc:
+
+```json
+{
+  "code": "error",
+  "message": "Bài làm đã được nộp."
+}
+```
+
+Server tìm lượt làm theo cả ID và tài khoản đang đăng nhập.
+Vì vậy, yêu cầu nộp bài của người khác nhận HTTP 404,
+không phải HTTP 403.
+
+Khi xem trang kết quả, lượt làm không tồn tại, không thuộc
+tài khoản hoặc chưa có trạng thái `submitted` trả HTTP 404
+với nội dung `"Không tìm thấy bài làm!"`.
+
+#### Tải ảnh
+
+| Trường hợp | Mã HTTP | Nội dung JSON |
+| --- | ---: | --- |
+| Không gửi file ảnh | 400 | `{"message":"Vui lòng chọn ảnh."}` |
+| MIME type không thuộc JPEG, PNG, WEBP hoặc GIF | 400 | `{"message":"Chỉ nhận ảnh JPG, PNG, WEBP hoặc GIF."}` |
+| File vượt 3 × 1024 × 1024 byte (3 MiB) | 400 | `{"message":"Ảnh không được vượt quá 3 MB."}` |
+| Cloudinary trả lỗi trong callback tải ảnh | 500 | `{"message":"Upload ảnh thất bại."}` |
+
+Phản hồi lỗi upload hiện chỉ có trường `message`,
+không có trường `code`.
+
+#### Đường dẫn và lỗi server
+
+- Đường dẫn không tồn tại trả HTTP 404 với nội dung
+  `"Không tìm thấy trang"`.
+- Lỗi được chuyển đến middleware xử lý lỗi chung
+  bằng `next(error)` trả HTTP 500 với nội dung
+  `"Có lỗi xảy ra trên máy chủ"`.
+- Phản hồi của middleware lỗi chung là nội dung văn bản,
+  không phải JSON, kể cả khi client yêu cầu JSON.
+- Lỗi truy vấn MongoDB trong quá trình xử lý request,
+  nếu được chuyển đến middleware lỗi chung, cũng nhận
+  phản hồi HTTP 500 này.
+
+#### Kết nối realtime
+
+- Socket.IO từ chối kết nối nếu thiếu token, token không
+  hợp lệ hoặc tài khoản không hoạt động.
+- Client nhận sự kiện `connect_error` và hiển thị
+  `"Chưa kết nối realtime"`.
+- Khi nhận sự kiện `disconnect`, client hiển thị
+  `"Mất kết nối"`.
+- Thông báo đã lưu trong MongoDB được lấy lại qua
+  `GET /notifications`. Client cũng tải lại danh sách
+  khi nhận `notification:new` hoặc `notification:read`.
+
+Các lỗi kết nối Socket.IO được xử lý qua sự kiện,
+không dùng cấu trúc phản hồi JSON của API nộp bài.
+
+#### Timeout khi nộp bài
+
+Client đặt thời hạn chờ 15 giây bằng
+`AbortSignal.timeout(15000)`.
+
+Khi fetch thất bại hoặc hết thời gian chờ, client hiển thị:
+
+“Không kết nối được server. Giữ trang mở để thử nộp lại.”
+
+Đây là timeout phía client, không phải phản hồi HTTP 408
+hay 504 từ server. Việc client ngừng chờ không bảo đảm
+server đã dừng xử lý yêu cầu.
 ## 6. Công nghệ sử dụng
 
 | Nhóm | Công nghệ / Thư viện | Vai trò |
