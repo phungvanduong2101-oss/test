@@ -20,8 +20,8 @@ Bài tập lớn môn Lập trình mạng.
 
 | STT | Mã sinh viên | Họ và tên | Nhiệm vụ chính | Đóng góp |
 | --- | --- | --- | --- | ---: |
-| 1 | B23DCCN226 | Phùng Văn Dương | Thiết kế kiến trúc MVC và cơ sở dữ liệu MongoDB; xây dựng backend Express, xác thực JWT cookie và phân quyền; quản lý câu hỏi, đề thi; cập nhật kết quả có điều kiện chống nộp trùng; tích hợp Socket.IO, Cloudinary | 50% |
-| 2 | B23DCCN784 | Trần Hoàng Thiên | Xây dựng snapshot dữ liệu bài làm và chức năng chấm điểm; triển khai kiểm thử tải bằng k6; kiểm thử chức năng, phân quyền và giao tiếp nhiều client; tổng hợp kết quả và biên soạn báo cáo kỹ thuật | 50% |
+| 1 | B23DCCN226 | Phùng Văn Dương | Thiết kế kiến trúc MVC và cơ sở dữ liệu MongoDB; xây dựng backend Express, xác thực JWT cookie và phân quyền; quản lý câu hỏi và đề thi ở cả phía quản trị viên và người dùng; triển khai nhóm học tập, duyệt thành viên và chia sẻ đề;  tích hợp thông báo realtime qua Socket.IO và tải ảnh lên Cloudinary | 50% |
+| 2 | B23DCCN784 | Trần Hoàng Thiên | Xây dựng snapshot dữ liệu bài làm và chức năng chấm điểm;cập nhật kết quả có điều kiện chống nộp trùng; triển khai kiểm thử tải bằng k6; kiểm thử chức năng, phân quyền và giao tiếp nhiều client; tổng hợp kết quả và biên soạn báo cáo kỹ thuật | 50% |
 | | | **Tổng** | | **100%** |
 
 ### 1.4. Giảng viên hướng dẫn
@@ -1062,12 +1062,8 @@ thiết kế, triển khai và kết quả thực nghiệm của dự án.
  
 ## 20. Phân công và đóng góp
 
-| Thành viên | Công việc thực hiện | Tỷ lệ đóng góp |
-| --- | --- | ---: |
-| Phùng Văn Dương | [Liệt kê công việc thực tế] | [...]% |
-| [Thành viên 2] | [Liệt kê công việc thực tế] | [...]% |
-| [Thành viên 3] | [Liệt kê công việc thực tế] | [...]% |
-| **Tổng** | | **100%** |
+Phân công công việc và tỷ lệ đóng góp của hai thành viên
+được trình bày tại [mục 1.3 — Nhóm thực hiện](#13-nhóm-thực-hiện).
 
 ## 21. Demo
 
