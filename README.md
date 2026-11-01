@@ -121,4 +121,179 @@ trên Cloudinary.
 | Đề thi cá nhân | Tạo và quản lý đề thi cá nhân | Đã triển khai |
 | Nhóm học tập | Tạo nhóm, xin tham gia, duyệt thành viên và chia sẻ đề | Đã triển khai |
 | Thông báo | Nhận thông báo realtime và xem lại thông báo đã lưu | Đã triển khai |
-| Quản trị hệ thống | Quản lý môn học, chuyên đề, câu hỏi, đề thi, công thức và người dùng | Đã triển khai |
+| Quản trị hệ thống | Quản lý môn học, chuyên đề, câu hỏi, đề thi, công thức và người dùng | Đã triển khai | 
+## 4. Kiến trúc hệ thống
+
+### 4.1. Sơ đồ kiến trúc
+
+```mermaid
+flowchart TD
+    A["Trình duyệt"] <-->|HTTP và Socket.IO| B["Node.js / Express"]
+    B --> C["Pug: render HTML"]
+    B <-->|Truy vấn và lưu dữ liệu| D["MongoDB"]
+    B <-->|Tải ảnh và nhận URL| E["Cloudinary"]
+```
+
+Trình duyệt gửi yêu cầu HTTP đến Express và nhận trang HTML
+hoặc dữ liệu JSON. Socket.IO dùng chung HTTP server để
+gửi thông báo realtime đến người dùng.
+
+### 4.2. Các thành phần
+
+| Thành phần | Trách nhiệm |
+| --- | --- |
+| Client | Hiển thị giao diện, nhận thao tác người dùng, gửi yêu cầu HTTP và nhận thông báo Socket.IO |
+| Server | Xác thực, phân quyền, xử lý nghiệp vụ, chấm điểm và điều phối truy cập dữ liệu |
+| Pug | Tạo trang HTML từ dữ liệu do server cung cấp |
+| MongoDB | Lưu tài khoản, nội dung ôn luyện, bài làm, nhóm và thông báo |
+| Cloudinary | Lưu trữ hình ảnh được tải lên |
+
+Mã nguồn server được tổ chức theo mô hình MVC:
+routes định tuyến yêu cầu, middlewares kiểm tra truy cập,
+controllers xử lý nghiệp vụ, models thao tác dữ liệu
+và views hiển thị giao diện.
+
+### 4.3. Luồng dữ liệu
+
+#### Luồng làm bài
+
+1. Người dùng chọn đề và gửi yêu cầu bắt đầu làm bài.
+2. Server kiểm tra quyền truy cập, tạo lượt làm và lưu
+   snapshot nội dung câu hỏi, đáp án, lời giải.
+3. Trình duyệt hiển thị câu hỏi và đếm ngược thời gian.
+4. Người dùng nộp bài hoặc trình duyệt tự gửi bài khi hết giờ.
+5. Server chấm điểm dựa trên snapshot và cập nhật kết quả
+   với điều kiện lượt làm vẫn ở trạng thái `in_progress`.
+6. Người dùng được chuyển đến trang kết quả.
+
+#### Luồng tải ảnh
+
+1. Trình duyệt gửi ảnh đến server bằng `multipart/form-data`.
+2. Server kiểm tra ảnh và tải lên Cloudinary.
+3. Cloudinary trả URL ảnh cho server.
+4. Server trả URL để trình soạn thảo chèn ảnh vào nội dung.
+
+#### Luồng thông báo
+
+1. Một thao tác nghiệp vụ phát sinh thông báo.
+2. Server lưu thông báo vào MongoDB.
+3. Server gửi sự kiện Socket.IO đến room của tài khoản nhận.
+4. Nếu đang kết nối, trình duyệt cập nhật thông báo realtime.
+   Người dùng có thể xem lại thông báo đã lưu khi truy cập. 
+## 5. Thiết kế giao tiếp mạng
+
+### 5.1. Mô hình giao tiếp
+
+Hệ thống sử dụng mô hình client–server:
+
+- Trình duyệt gửi yêu cầu HTTP đến Express để truy cập
+  trang, gửi biểu mẫu và thực hiện các thao tác nghiệp vụ.
+- Server trả về trang HTML, dữ liệu JSON hoặc phản hồi
+  chuyển hướng tùy chức năng.
+- Socket.IO duy trì kết nối để server chủ động gửi
+  thông báo đến trình duyệt.
+
+Frontend được phục vụ cùng server, không cần khởi chạy
+một ứng dụng client riêng.
+
+### 5.2. Giao thức sử dụng
+
+| Giao tiếp | Công nghệ | Mục đích |
+| --- | --- | --- |
+| Trình duyệt – Server | HTTP | Truy cập trang, xác thực, quản lý nội dung và làm bài |
+| Trình duyệt – Server | Socket.IO | Gửi và nhận sự kiện thông báo realtime |
+| Server – MongoDB | MongoDB Driver thông qua Mongoose | Truy vấn và lưu dữ liệu |
+| Server – Cloudinary | HTTPS thông qua SDK | Tải ảnh và nhận URL ảnh |
+
+Socket.IO hỗ trợ WebSocket và HTTP long-polling tùy cấu hình
+và điều kiện kết nối; không phải giao thức WebSocket thuần.
+
+### 5.3. Định dạng thông điệp
+
+#### HTTP
+
+- Các trang giao diện được trả về dưới dạng `text/html`.
+- Các thao tác dùng JavaScript có thể trao đổi dữ liệu JSON.
+- Biểu mẫu được gửi theo định dạng do từng form quy định.
+- Ảnh được tải lên bằng `multipart/form-data`.
+- JWT được trình duyệt gửi kèm trong cookie; server xác minh
+  trước khi cho phép truy cập chức năng được bảo vệ.
+
+Một số yêu cầu trong luồng làm bài:
+
+| Phương thức | Đường dẫn | Mục đích |
+| --- | --- | --- |
+| GET | `/exams` | Xem danh sách đề |
+| GET | `/exams/:id` | Xem thông tin đề |
+| POST | `/exams/:examId/start` | Bắt đầu lượt làm |
+| POST | `/exams/submit` | Nộp bài |
+| GET | `/exams/:attemptId/result` | Xem kết quả |
+
+#### Socket.IO
+
+Thông báo được trao đổi dưới dạng sự kiện kèm dữ liệu.
+Server xác thực kết nối bằng JWT cookie và đưa socket
+vào room `account:<accountId>` để gửi thông báo đến
+đúng tài khoản.
+
+Tên sự kiện và các trường dữ liệu phải thống nhất giữa
+phần phát sự kiện trên server và phần lắng nghe trên client.
+
+### 5.4. Trình tự giao tiếp
+
+```mermaid
+sequenceDiagram
+    participant C as Trình duyệt
+    participant S as Server
+    participant D as MongoDB
+    C->>S: POST /exams/:examId/start
+    S->>D: Tạo lượt làm và snapshot
+    D-->>S: Lượt làm đã lưu
+    S-->>C: Phản hồi để hiển thị bài làm
+    C->>S: POST /exams/submit
+    S->>D: Đọc snapshot để chấm điểm
+    D-->>S: Dữ liệu bài làm
+    S->>D: Cập nhật với điều kiện in_progress
+    D-->>S: Kết quả cập nhật
+    S-->>C: Kết quả xử lý nộp bài
+    C->>S: GET /exams/:attemptId/result
+    S-->>C: Trang kết quả
+```
+
+### 5.5. Xử lý lỗi
+
+| Trường hợp | Cách xử lý |
+| --- | --- |
+| Chưa đăng nhập hoặc token không hợp lệ | Middleware chặn truy cập chức năng được bảo vệ |
+| Không đủ quyền | Từ chối thao tác quản trị hoặc truy cập tài nguyên không thuộc quyền người dùng |
+| Dữ liệu đầu vào không hợp lệ | Kiểm tra và từ chối yêu cầu, trả thông báo phù hợp |
+| Tài nguyên không tồn tại | Thông báo không tìm thấy |
+| Nộp lại lượt đã hoàn tất | Không cập nhật ghi đè kết quả đã lưu |
+| Ảnh sai định dạng hoặc vượt giới hạn | Từ chối tải lên |
+| Lỗi MongoDB hoặc Cloudinary | Xử lý lỗi và thông báo thao tác thất bại |
+| Mất kết nối realtime | Thông báo đã lưu vẫn có thể được truy xuất lại khi người dùng truy cập hệ thống | 
+## 6. Công nghệ sử dụng
+
+| Nhóm | Công nghệ / Thư viện | Vai trò |
+| --- | --- | --- |
+| Ngôn ngữ | JavaScript | Lập trình server và xử lý tương tác trên trình duyệt |
+| Môi trường thực thi | Node.js | Chạy ứng dụng phía server |
+| Web framework | Express 5 | Định tuyến HTTP, middleware và xử lý yêu cầu |
+| Giao diện | Pug, HTML, CSS | Render và trình bày giao diện |
+| Giao tiếp realtime | Socket.IO | Gửi thông báo đến người dùng đang kết nối |
+| Cơ sở dữ liệu | MongoDB | Lưu trữ dữ liệu hệ thống |
+| ODM | Mongoose | Định nghĩa schema và thao tác với MongoDB |
+| Xác thực | jsonwebtoken, cookie-parser | Tạo, đọc và xác minh JWT qua cookie |
+| Hash mật khẩu | bcryptjs | Hash và kiểm tra mật khẩu |
+| Soạn thảo | Quill, KaTeX | Soạn nội dung và công thức toán |
+| Tải ảnh | Multer, Cloudinary | Tiếp nhận và lưu trữ hình ảnh |
+| Cấu hình | dotenv | Đọc biến môi trường từ file `.env` |
+| Nén và ghi log | compression, morgan | Nén phản hồi HTTP và ghi log truy cập |
+| Quản lý gói | npm hoặc Yarn | Cài đặt thư viện và chạy script |
+| Phát triển | nodemon | Tự khởi động lại server khi mã nguồn thay đổi |
+| Kiểm thử tải | k6 | Đo thời gian phản hồi, thông lượng và tỷ lệ lỗi |
+| Hệ điều hành thực nghiệm | Windows 11 | Chạy server, MongoDB và công cụ đo tải |
+
+Danh sách thư viện và ràng buộc phiên bản được khai báo
+trong `package.json`. File `yarn.lock` khóa phiên bản
+dependency khi cài đặt bằng Yarn.
