@@ -20,8 +20,8 @@ Bài tập lớn môn Lập trình mạng.
 
 | STT | Mã sinh viên | Họ và tên | Nhiệm vụ chính | Đóng góp |
 | --- | --- | --- | --- | ---: |
-| 1 | B23DCCN226 | Phùng Văn Dương | Thiết kế kiến trúc MVC và cơ sở dữ liệu MongoDB; xây dựng backend Express, xác thực JWT cookie và phân quyền; quản lý câu hỏi và đề thi ở cả phía quản trị viên và người dùng; triển khai nhóm học tập, duyệt thành viên và chia sẻ đề;  tích hợp thông báo realtime qua Socket.IO và tải ảnh lên Cloudinary | 50% |
-| 2 | B23DCCN784 | Trần Hoàng Thiên | Xây dựng snapshot dữ liệu bài làm và chức năng chấm điểm;cập nhật kết quả có điều kiện chống nộp trùng; triển khai kiểm thử tải bằng k6; kiểm thử chức năng, phân quyền và giao tiếp nhiều client; tổng hợp kết quả và biên soạn báo cáo kỹ thuật | 50% |
+| 1 | B23DCCN226 | Phùng Văn Dương | Thiết kế kiến trúc MVC và cơ sở dữ liệu MongoDB; xây dựng backend Express, xác thực JWT cookie và phân quyền; quản lý câu hỏi và đề thi ở cả phía quản trị viên và người dùng; tích hợp thông báo realtime qua Socket.IO và tải ảnh lên Cloudinary | 50% |
+| 2 | B23DCCN784 | Trần Hoàng Thiên | Triển khai nhóm học tập, duyệt thành viên và chia sẻ đề; Xây dựng snapshot dữ liệu bài làm và chức năng chấm điểm; cập nhật kết quả có điều kiện chống nộp trùng; triển khai kiểm thử tải bằng k6; kiểm thử chức năng, phân quyền và giao tiếp nhiều client; tổng hợp kết quả và biên soạn báo cáo kỹ thuật | 50% |
 | | | **Tổng** | | **100%** |
 
 ### 1.4. Giảng viên hướng dẫn
@@ -1187,8 +1187,8 @@ của học phần.
 
 ## 24. Liên hệ
 
-- Đại diện nhóm: [Họ và tên].
-- Email: [Email liên hệ].
-- Nhóm bài tập: [Số nhóm].
-- Lớp học phần: [Mã lớp học phần].
+- Đại diện nhóm: Phùng Văn Dương. 
+- Email: phungvanduong2101@gmail.com
+- Nhóm bài tập: 14.
+- Lớp học phần: Lập trình mạng
 
