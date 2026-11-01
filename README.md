@@ -296,4 +296,115 @@ sequenceDiagram
 
 Danh sách thư viện và ràng buộc phiên bản được khai báo
 trong `package.json`. File `yarn.lock` khóa phiên bản
-dependency khi cài đặt bằng Yarn.
+dependency khi cài đặt bằng Yarn. 
+
+## 7. Đóng góp kỹ thuật
+
+### 7.1. Phương án cơ sở (Baseline)
+
+Để làm rõ các lựa chọn thiết kế, dự án sử dụng hai phương án
+cơ sở để đối chiếu:
+
+- Lượt làm chỉ lưu tham chiếu đến câu hỏi gốc và sử dụng
+  nội dung hiện tại khi xem lại hoặc chấm điểm. Khi câu hỏi
+  bị chỉnh sửa, nội dung lịch sử có thể không còn phản ánh
+  đúng thời điểm bắt đầu làm bài.
+- Thao tác nộp bài kiểm tra trạng thái trước, sau đó cập nhật
+  kết quả bằng một thao tác riêng không kèm điều kiện trạng thái.
+  Nhiều yêu cầu có thể cùng vượt qua bước kiểm tra và tiếp tục
+  cập nhật cùng một lượt làm.
+
+Đây là các phương án cơ sở dùng để so sánh thiết kế,
+không phải kết luận về mọi hệ thống luyện thi khác.
+
+### 7.2. Giải pháp của dự án
+
+#### Bảo toàn dữ liệu bằng snapshot
+
+Khi bắt đầu lượt làm, server lưu bản sao nội dung câu hỏi,
+các lựa chọn, đáp án và lời giải vào lượt làm.
+
+Server sử dụng snapshot để chấm điểm và hiển thị kết quả,
+giúp lượt làm không phụ thuộc vào những chỉnh sửa sau đó
+của câu hỏi gốc.
+
+#### Kiểm soát cập nhật kết quả
+
+Khi lưu kết quả nộp bài, server đặt điều kiện trạng thái
+`in_progress` ngay trong thao tác cập nhật MongoDB.
+
+Chỉ lượt làm chưa hoàn tất mới được chuyển sang `submitted`.
+Yêu cầu đến sau không thể dùng thao tác này để ghi đè
+kết quả đã nộp.
+
+### 7.3. Các đóng góp
+
+| STT | Đóng góp | Ý nghĩa | Bằng chứng |
+| --- | --- | --- | --- |
+| 1 | Snapshot dữ liệu bài làm | Giữ nội dung tại thời điểm bắt đầu, phục vụ chấm điểm và xem lại | Mã nguồn tạo lượt làm; kiểm thử sửa câu hỏi sau khi bắt đầu |
+| 2 | Cập nhật kết quả có điều kiện trạng thái | Kiểm soát chuyển trạng thái và ngăn nộp lặp ghi đè kết quả | Mã nguồn xử lý nộp bài; kiểm thử gửi lại yêu cầu nộp |
+
+Đây là các đóng góp triển khai trong phạm vi dự án,
+vận dụng những kỹ thuật đã có để giải quyết yêu cầu
+bảo toàn dữ liệu và kiểm soát cập nhật.
+
+### 7.4. So sánh phương án cơ sở và giải pháp
+
+| Tiêu chí | Phương án cơ sở | Giải pháp của dự án |
+| --- | --- | --- |
+| Dữ liệu câu hỏi của lượt làm | Phụ thuộc câu hỏi gốc | Lưu snapshot trong lượt làm |
+| Khi câu hỏi gốc thay đổi | Có thể ảnh hưởng việc chấm hoặc xem lại | Lượt đã tạo giữ nội dung snapshot |
+| Kiểm tra trạng thái nộp | Kiểm tra riêng trước khi cập nhật | Kiểm tra trong thao tác cập nhật |
+| Yêu cầu nộp lặp | Có nguy cơ ghi đè nếu thiếu điều kiện bảo vệ | Không cập nhật khi trạng thái đã là submitted |
+| Chi phí lưu trữ | Ít dữ liệu sao chép hơn | Tăng dung lượng do lưu snapshot |
+
+So sánh trên tập trung vào thiết kế và hành vi chức năng.
+Dự án chưa thực hiện benchmark đối chứng hiệu năng giữa
+phương án cơ sở và giải pháp đề xuất. Kết quả k6 ở phần
+thực nghiệm chỉ đánh giá endpoint GET /exams. 
+
+## 8. Cấu trúc mã nguồn
+
+| Đường dẫn | Nội dung |
+| --- | --- |
+| `index.js` | Khởi tạo server, kết nối MongoDB và thiết lập Socket.IO |
+| `package.json` | Khai báo thư viện và các script chạy ứng dụng |
+| `yarn.lock` | Khóa phiên bản dependency khi sử dụng Yarn |
+| `config/` | Cấu hình kết nối và dịch vụ |
+| `routes/` | Định nghĩa các đường dẫn của người dùng và quản trị viên |
+| `controllers/` | Xử lý yêu cầu và nghiệp vụ |
+| `models/` | Định nghĩa schema và model Mongoose |
+| `middlewares/` | Xác thực, phân quyền và xử lý tải ảnh |
+| `views/` | Các template Pug |
+| `public/` | CSS, JavaScript phía trình duyệt và hình ảnh |
+| `services/` | Xử lý lưu và gửi thông báo |
+| `sockets/` | Thiết lập kết nối và xác thực Socket.IO |
+| `scripts/seed-accounts.js` | Tạo tài khoản demo |
+| `tests/load/` | Script k6 và log kết quả kiểm thử tải |
+| `README.md` | Giới thiệu dự án, hướng dẫn cài đặt, chạy và kiểm thử |
+| `report/report.pdf` | Báo cáo đầy đủ của dự án | 
+
+File `.env` được người chạy tạo tại thư mục gốc theo hướng dẫn
+cấu hình. Không đưa thông tin bí mật thực tế vào mã nguồn công khai. 
+
+## 9. Yêu cầu môi trường
+
+| Thành phần | Yêu cầu |
+| --- | --- |
+| Node.js | Phiên bản từ 20.19 |
+| Cơ sở dữ liệu | MongoDB chạy local hoặc MongoDB Atlas |
+| Trình duyệt | Trình duyệt hiện đại có hỗ trợ JavaScript và cookie |
+| Quản lý gói | npm đi kèm Node.js hoặc Yarn nếu muốn sử dụng thay npm |
+| Lưu trữ ảnh | Tài khoản Cloudinary và thông tin cấu hình API |
+| Git | Cần nếu lấy mã nguồn bằng lệnh `git clone` |
+| k6 | Cài riêng nếu muốn chạy kiểm thử tải |
+
+MongoDB phải được khởi động và có thể truy cập qua
+`MONGO_URI` trước khi chạy seed hoặc sử dụng ứng dụng.
+
+Máy chạy server cần kết nối Internet để tải ảnh lên
+Cloudinary. Nếu sử dụng MongoDB Atlas, server cũng cần
+kết nối đến dịch vụ Atlas.
+
+Frontend được phục vụ cùng server, không cần cài đặt
+hoặc khởi chạy một ứng dụng client riêng.
